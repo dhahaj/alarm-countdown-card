@@ -7,7 +7,7 @@ A sleek countdown-to-alarm card for [Home Assistant](https://www.home-assistant.
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
 <!-- Drop a screenshot or GIF here. People decide in 2 seconds whether to install. -->
-<!-- ![Alarm Countdown Card preview](docs/preview.png) -->
+![Alarm Countdown Card preview](docs/preview.png)
 
 ## Features
 
