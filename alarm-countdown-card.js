@@ -18,9 +18,9 @@ class AlarmCountdownCard extends HTMLElement {
 
   setConfig(config) {
     this._config = {
-      entity: config.entity || "input_datetime.alarm_time",
-      toggle_entity: config.toggle_entity || "input_boolean.alarm_active",
-      siren_entity: config.siren_entity || "siren.alarm",
+      entity: config.entity,
+      toggle_entity: config.toggle_entity,
+      dismiss_entity: config.dismiss_entity || config.siren_entity,
       name: config.name || "Alarm",
       show_seconds: config.show_seconds !== false,
       icon: config.icon || "mdi:alarm",
@@ -32,7 +32,7 @@ class AlarmCountdownCard extends HTMLElement {
     return {
       entity: "input_datetime.alarm_time",
       toggle_entity: "input_boolean.alarm_active",
-      siren_entity: "siren.alarm",
+      dismiss_entity: "siren.alarm",
     };
   }
 
@@ -41,7 +41,7 @@ class AlarmCountdownCard extends HTMLElement {
   _buildDOM() {
     var cfg = this._config;
     var style = document.createElement("style");
-    style.textContent = "\n      :host {\n        --card-bg: var(--ha-card-background, var(--card-background-color, #1c1c2e));\n        --card-radius: var(--ha-card-border-radius, 16px);\n        --primary-text: var(--primary-text-color, #e1e1ef);\n        --secondary-text: var(--secondary-text-color, #9a9ab0);\n        --accent: var(--accent-color, #7c6cff);\n        --accent-glow: color-mix(in srgb, var(--accent) 40%, transparent);\n        --danger: #ff4c6a;\n        --danger-glow: rgba(255, 76, 106, 0.35);\n      }\n      .card {\n        background: var(--card-bg);\n        border-radius: var(--card-radius);\n        padding: 24px;\n        font-family: inherit;\n        position: relative;\n        overflow: hidden;\n        transition: opacity 0.3s ease;\n        border: 2px solid transparent;\n      }\n      .header {\n        display: flex;\n        align-items: center;\n        gap: 10px;\n        margin-bottom: 20px;\n      }\n      .header > ha-icon {\n        --mdc-icon-size: 22px;\n        color: var(--accent);\n        filter: drop-shadow(0 0 6px var(--accent-glow));\n        transition: color 0.3s, filter 0.3s, opacity 0.3s;\n      }\n      .header .title {\n        font-size: 14px;\n        font-weight: 600;\n        letter-spacing: 0.06em;\n        text-transform: uppercase;\n        color: var(--secondary-text);\n        flex: 1;\n      }\n      .toggle-btn {\n        background: none;\n        border: 1.5px solid color-mix(in srgb, var(--secondary-text) 30%, transparent);\n        border-radius: 10px;\n        color: var(--secondary-text);\n        font-size: 12px;\n        font-weight: 600;\n        padding: 5px 14px;\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        gap: 6px;\n        transition: all 0.2s ease;\n      }\n      .toggle-btn ha-icon {\n        --mdc-icon-size: 16px;\n        color: inherit;\n        filter: none;\n      }\n      .toggle-btn.on {\n        border-color: var(--accent);\n        color: var(--accent);\n        background: color-mix(in srgb, var(--accent) 10%, transparent);\n      }\n      .toggle-btn.off {\n        border-color: color-mix(in srgb, var(--secondary-text) 20%, transparent);\n        color: var(--secondary-text);\n        opacity: 0.7;\n      }\n      .toggle-btn:hover {\n        border-color: var(--accent);\n        color: var(--accent);\n        background: color-mix(in srgb, var(--accent) 12%, transparent);\n      }\n      .toggle-btn.missing {\n        border-color: #e8944c;\n        color: #e8944c;\n        opacity: 0.85;\n        font-size: 11px;\n      }\n      .countdown-wrap {\n        display: flex;\n        justify-content: center;\n        gap: 8px;\n        margin-bottom: 16px;\n        transition: opacity 0.3s, filter 0.3s;\n      }\n      .unit-box {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        min-width: 64px;\n      }\n      .unit-value {\n        font-size: 48px;\n        font-weight: 700;\n        line-height: 1;\n        color: var(--primary-text);\n        font-variant-numeric: tabular-nums;\n        transition: color 0.3s;\n      }\n      .unit-label {\n        font-size: 11px;\n        font-weight: 500;\n        text-transform: uppercase;\n        letter-spacing: 0.1em;\n        color: var(--secondary-text);\n        margin-top: 6px;\n      }\n      .separator {\n        font-size: 40px;\n        font-weight: 300;\n        color: var(--secondary-text);\n        opacity: 0.4;\n        align-self: flex-start;\n        line-height: 1;\n        padding-top: 2px;\n      }\n      .blink .separator { animation: blink 2s ease-in-out infinite; }\n      @keyframes blink { 0%,100%{opacity:0.4} 50%{opacity:0.1} }\n      .sec-group { display: contents; }\n      .sec-group[hidden] { display: none; }\n      .alarm-target {\n        text-align: center;\n        font-size: 13px;\n        color: var(--secondary-text);\n        opacity: 0.7;\n        transition: opacity 0.3s;\n      }\n      .alarm-target .time {\n        font-weight: 600;\n        color: var(--accent);\n      }\n      .disabled-notice {\n        text-align: center;\n        font-size: 13px;\n        color: var(--secondary-text);\n        opacity: 0.6;\n        margin-top: 8px;\n      }\n      .disabled-notice[hidden] { display: none; }\n      .no-entity {\n        text-align: center;\n        padding: 16px;\n        color: var(--secondary-text);\n        font-size: 14px;\n      }\n      .no-entity[hidden] { display: none; }\n      .dismiss-wrap {\n        margin-top: 18px;\n        display: flex;\n        justify-content: center;\n      }\n      .dismiss-wrap[hidden] { display: none; }\n      .dismiss-btn {\n        background: var(--danger);\n        color: #fff;\n        border: none;\n        border-radius: 16px;\n        font-size: 18px;\n        font-weight: 700;\n        letter-spacing: 0.04em;\n        padding: 16px 48px;\n        cursor: pointer;\n        width: 100%;\n        max-width: 320px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        gap: 10px;\n        box-shadow: 0 6px 28px var(--danger-glow);\n        animation: dismiss-pulse 1s ease-in-out infinite alternate;\n        transition: transform 0.1s;\n        -webkit-tap-highlight-color: transparent;\n      }\n      .dismiss-btn:active {\n        transform: scale(0.96);\n        animation: none;\n      }\n      .dismiss-btn ha-icon {\n        --mdc-icon-size: 24px;\n        color: #fff;\n        filter: none;\n      }\n      @keyframes dismiss-pulse {\n        from { box-shadow: 0 6px 28px var(--danger-glow); }\n        to   { box-shadow: 0 10px 44px var(--danger-glow), 0 0 20px var(--danger-glow); }\n      }\n      .card.siren-active {\n        border-color: var(--danger);\n        animation: card-flash 1.2s ease-in-out infinite alternate;\n      }\n      @keyframes card-flash {\n        from { border-color: var(--danger); }\n        to   { border-color: transparent; }\n      }\n      .card.siren-active .header > ha-icon {\n        color: var(--danger);\n        filter: drop-shadow(0 0 8px var(--danger-glow));\n        animation: icon-ring 0.4s ease-in-out infinite alternate;\n      }\n      @keyframes icon-ring {\n        from { transform: rotate(-8deg); }\n        to   { transform: rotate(8deg); }\n      }\n      .card.disabled .countdown-wrap {\n        opacity: 0.2;\n        filter: grayscale(0.8);\n      }\n      .card.disabled .alarm-target { opacity: 0.25; }\n      .card.disabled .header > ha-icon {\n        color: var(--secondary-text);\n        filter: none;\n        opacity: 0.5;\n      }\n      .card.ring-active .unit-value {\n        color: var(--accent);\n        animation: pulse 0.6s ease-in-out infinite alternate;\n      }\n      @keyframes pulse { from{opacity:1} to{opacity:0.4} }\n    ";
+    style.textContent = "\n      :host {\n        --card-bg: var(--ha-card-background, var(--card-background-color, #1c1c2e));\n        --card-radius: var(--ha-card-border-radius, 16px);\n        --primary-text: var(--primary-text-color, #e1e1ef);\n        --secondary-text: var(--secondary-text-color, #9a9ab0);\n        --accent: var(--accent-color, #7c6cff);\n        --accent-glow: color-mix(in srgb, var(--accent) 40%, transparent);\n        --danger: #ff4c6a;\n        --danger-glow: rgba(255, 76, 106, 0.35);\n      }\n      .card {\n        background: var(--card-bg);\n        border-radius: var(--card-radius);\n        padding: 24px;\n        font-family: inherit;\n        position: relative;\n        overflow: hidden;\n        transition: opacity 0.3s ease;\n        border: 2px solid transparent;\n      }\n      .header {\n        display: flex;\n        align-items: center;\n        gap: 10px;\n        margin-bottom: 20px;\n      }\n      .header > ha-icon {\n        --mdc-icon-size: 22px;\n        color: var(--accent);\n        filter: drop-shadow(0 0 6px var(--accent-glow));\n        transition: color 0.3s, filter 0.3s, opacity 0.3s;\n      }\n      .header .title {\n        font-size: 14px;\n        font-weight: 600;\n        letter-spacing: 0.06em;\n        text-transform: uppercase;\n        color: var(--secondary-text);\n        flex: 1;\n      }\n      .toggle-btn {\n        background: none;\n        border: 1.5px solid color-mix(in srgb, var(--secondary-text) 30%, transparent);\n        border-radius: 10px;\n        color: var(--secondary-text);\n        font-size: 12px;\n        font-weight: 600;\n        padding: 5px 14px;\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        gap: 6px;\n        transition: all 0.2s ease;\n      }\n      .toggle-btn ha-icon {\n        --mdc-icon-size: 16px;\n        color: inherit;\n        filter: none;\n      }\n      .toggle-btn.on {\n        border-color: var(--accent);\n        color: var(--accent);\n        background: color-mix(in srgb, var(--accent) 10%, transparent);\n      }\n      .toggle-btn.off {\n        border-color: color-mix(in srgb, var(--secondary-text) 20%, transparent);\n        color: var(--secondary-text);\n        opacity: 0.7;\n      }\n      .toggle-btn:hover {\n        border-color: var(--accent);\n        color: var(--accent);\n        background: color-mix(in srgb, var(--accent) 12%, transparent);\n      }\n      .toggle-btn.missing {\n        border-color: #e8944c;\n        color: #e8944c;\n        opacity: 0.85;\n        font-size: 11px;\n      }\n      .countdown-wrap {\n        display: flex;\n        justify-content: center;\n        gap: 8px;\n        margin-bottom: 16px;\n        transition: opacity 0.3s, filter 0.3s;\n      }\n      .unit-box {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        min-width: 64px;\n      }\n      .unit-value {\n        font-size: 48px;\n        font-weight: 700;\n        line-height: 1;\n        color: var(--primary-text);\n        font-variant-numeric: tabular-nums;\n        transition: color 0.3s;\n      }\n      .unit-label {\n        font-size: 11px;\n        font-weight: 500;\n        text-transform: uppercase;\n        letter-spacing: 0.1em;\n        color: var(--secondary-text);\n        margin-top: 6px;\n      }\n      .separator {\n        font-size: 40px;\n        font-weight: 300;\n        color: var(--secondary-text);\n        opacity: 0.4;\n        align-self: flex-start;\n        line-height: 1;\n        padding-top: 2px;\n      }\n      .blink .separator { animation: blink 2s ease-in-out infinite; }\n      @keyframes blink { 0%,100%{opacity:0.4} 50%{opacity:0.1} }\n      .sec-group { display: contents; }\n      .sec-group[hidden] { display: none; }\n      .alarm-target {\n        text-align: center;\n        font-size: 13px;\n        color: var(--secondary-text);\n        opacity: 0.7;\n        transition: opacity 0.3s;\n      }\n      .alarm-target .time {\n        font-weight: 600;\n        color: var(--accent);\n      }\n      .disabled-notice {\n        text-align: center;\n        font-size: 13px;\n        color: var(--secondary-text);\n        opacity: 0.6;\n        margin-top: 8px;\n      }\n      .disabled-notice[hidden] { display: none; }\n      .no-entity {\n        text-align: center;\n        padding: 16px;\n        color: var(--secondary-text);\n        font-size: 14px;\n      }\n      .no-entity[hidden] { display: none; }\n      .dismiss-wrap {\n        margin-top: 18px;\n        display: flex;\n        justify-content: center;\n      }\n      .dismiss-wrap[hidden] { display: none; }\n      .dismiss-btn {\n        background: var(--danger);\n        color: #fff;\n        border: none;\n        border-radius: 16px;\n        font-size: 18px;\n        font-weight: 700;\n        letter-spacing: 0.04em;\n        padding: 16px 48px;\n        cursor: pointer;\n        width: 100%;\n        max-width: 320px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        gap: 10px;\n        box-shadow: 0 6px 28px var(--danger-glow);\n        animation: dismiss-pulse 1s ease-in-out infinite alternate;\n        transition: transform 0.1s;\n        -webkit-tap-highlight-color: transparent;\n      }\n      .dismiss-btn:active {\n        transform: scale(0.96);\n        animation: none;\n      }\n      .dismiss-btn ha-icon {\n        --mdc-icon-size: 24px;\n        color: #fff;\n        filter: none;\n      }\n      @keyframes dismiss-pulse {\n        from { box-shadow: 0 6px 28px var(--danger-glow); }\n        to   { box-shadow: 0 10px 44px var(--danger-glow), 0 0 20px var(--danger-glow); }\n      }\n      .card.dismiss-active {\n        border-color: var(--danger);\n        animation: card-flash 1.2s ease-in-out infinite alternate;\n      }\n      @keyframes card-flash {\n        from { border-color: var(--danger); }\n        to   { border-color: transparent; }\n      }\n      .card.dismiss-active .header > ha-icon {\n        color: var(--danger);\n        filter: drop-shadow(0 0 8px var(--danger-glow));\n        animation: icon-ring 0.4s ease-in-out infinite alternate;\n      }\n      @keyframes icon-ring {\n        from { transform: rotate(-8deg); }\n        to   { transform: rotate(8deg); }\n      }\n      .card.disabled .countdown-wrap {\n        opacity: 0.2;\n        filter: grayscale(0.8);\n      }\n      .card.disabled .alarm-target { opacity: 0.25; }\n      .card.disabled .header > ha-icon {\n        color: var(--secondary-text);\n        filter: none;\n        opacity: 0.5;\n      }\n      .card.ring-active .unit-value {\n        color: var(--accent);\n        animation: pulse 0.6s ease-in-out infinite alternate;\n      }\n      @keyframes pulse { from{opacity:1} to{opacity:0.4} }\n    ";
 
     this._card = document.createElement("div");
     this._card.className = "card";
@@ -167,12 +167,10 @@ class AlarmCountdownCard extends HTMLElement {
       if (!self._hass) return;
       var te = self._hass.states[self._config.toggle_entity];
       if (!te) {
-        alert('Entity "' + self._config.toggle_entity + '" not found.
-
-Create it via Settings > Helpers > Toggle.');
+        alert('Entity "' + self._config.toggle_entity + '" not found.');
         return;
       }
-      self._hass.callService("input_boolean", "toggle", {
+      self._hass.callService("homeassistant", "toggle", {
         entity_id: self._config.toggle_entity,
       });
     });
@@ -180,8 +178,8 @@ Create it via Settings > Helpers > Toggle.');
     this.$dismissBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       if (!self._hass) return;
-      self._hass.callService("siren", "turn_off", {
-        entity_id: self._config.siren_entity,
+      self._hass.callService("homeassistant", "turn_off", {
+        entity_id: self._config.dismiss_entity,
       });
     });
   }
@@ -198,6 +196,15 @@ Create it via Settings > Helpers > Toggle.');
 
     var now = new Date();
     var hour, minute, second;
+
+    // Try parsing as ISO 8601 timestamp first
+    var timestamp = Date.parse(entity.state);
+    if (!isNaN(timestamp)) {
+      var target = new Date(timestamp);
+      // If the timestamp is just a time (not a full date), it might be in the past
+      // But usually ISO timestamps are full dates.
+      return target;
+    }
 
     if (entity.attributes.hour !== undefined) {
       hour = entity.attributes.hour;
@@ -231,10 +238,10 @@ Create it via Settings > Helpers > Toggle.');
     var pad = function(n) { return String(n).padStart(2, "0"); };
     var entity = this._hass.states[this._config.entity];
     var toggleEntity = this._hass.states[this._config.toggle_entity];
-    var sirenEntity = this._hass.states[this._config.siren_entity];
+    var dismissEntity = this._hass.states[this._config.dismiss_entity];
     var toggleExists = !!toggleEntity;
     var enabled = toggleExists ? toggleEntity.state === "on" : true;
-    var sirenActive = sirenEntity && sirenEntity.state === "on";
+    var dismissActive = dismissEntity && dismissEntity.state === "on";
 
     // Toggle button state
     if (toggleExists) {
@@ -248,7 +255,7 @@ Create it via Settings > Helpers > Toggle.');
     }
 
     // Dismiss button visibility
-    this.$dismissWrap.hidden = !sirenActive;
+    this.$dismissWrap.hidden = !dismissActive;
 
     // Missing datetime entity
     if (!entity) {
@@ -292,7 +299,7 @@ Create it via Settings > Helpers > Toggle.');
     var cls = "card";
     if (!enabled) cls += " disabled";
     if (isNearAlarm) cls += " ring-active";
-    if (sirenActive) cls += " siren-active";
+    if (dismissActive) cls += " dismiss-active";
     this._card.className = cls;
 
     this.$disabledNotice.hidden = enabled;
@@ -318,7 +325,7 @@ window.customCards.push({
 });
 
 console.info(
-  "%c ALARM-COUNTDOWN-CARD %c v4 loaded ",
+  "%c ALARM-COUNTDOWN-CARD %c v5 loaded ",
   "background:#7c6cff;color:#fff;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px",
   "background:#333;color:#ccc;padding:2px 6px;border-radius:0 4px 4px 0"
 );
