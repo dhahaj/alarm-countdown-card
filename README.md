@@ -95,6 +95,21 @@ dismiss_action:
     entity_id: script.silence_and_coffee
 ```
 
+### Multiple Dismiss Actions
+
+You can also define a list of actions to run sequentially.
+
+```yaml
+dismiss_entity: siren.alarm
+dismiss_action:
+  - action: script.turn_on
+    target:
+      entity_id: script.office_dim
+  - action: siren.turn_off
+    target:
+      entity_id: siren.alarm
+```
+
 ## How it pairs with an automation
 
 This card is the UI half. The brains live in a Home Assistant automation that watches `time_entity` and performs an action when the time matches and `toggle_entity` is on. A consolidated `repeat/while` loop with `wait_for_trigger` listening for the `dismiss_action` target state works really well — see the [HA automation docs](https://www.home-assistant.io/docs/automation/) for patterns.

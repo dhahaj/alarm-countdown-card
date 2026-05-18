@@ -50,8 +50,14 @@ class AlarmCountdownCard extends HTMLElement {
     }
 
     // 3. Fallback: if we still have an action but NO watcher, try to extract watcher from action
-    if (!this._config.dismiss_entity && this._config.dismiss_action && this._config.dismiss_action.target) {
-      this._config.dismiss_entity = this._config.dismiss_action.target.entity_id;
+    if (!this._config.dismiss_entity && this._config.dismiss_action) {
+      const firstAction = Array.isArray(this._config.dismiss_action)
+        ? this._config.dismiss_action[0]
+        : this._config.dismiss_action;
+
+      if (firstAction && firstAction.target && firstAction.target.entity_id) {
+        this._config.dismiss_entity = firstAction.target.entity_id;
+      }
     }
   }
 
@@ -205,14 +211,20 @@ class AlarmCountdownCard extends HTMLElement {
     this.$dismissBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       if (!self._hass) return;
-      
-      const actionParts = self._config.dismiss_action.action.split(".");
-      const domain = actionParts[0];
-      const service = actionParts[1];
-      
-      self._hass.callService(domain, service, {
-        ...self._config.dismiss_action.data,
-        ...self._config.dismiss_action.target,
+
+      const actions = Array.isArray(self._config.dismiss_action)
+        ? self._config.dismiss_action
+        : [self._config.dismiss_action];
+
+      actions.forEach(action => {
+        const actionParts = action.action.split(".");
+        const domain = actionParts[0];
+        const service = actionParts[1];
+
+        self._hass.callService(domain, service, {
+          ...action.data,
+          ...action.target,
+        });
       });
     });
   }
