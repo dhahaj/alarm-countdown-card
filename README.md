@@ -40,9 +40,9 @@ Create these in **Settings → Devices & services → Helpers** before adding th
 
 | Helper | Type | Purpose |
 | --- | --- | --- |
-| `input_datetime.alarm_time` | Date/time (time only) | When the alarm should fire |
-| `input_boolean.alarm_active` | Toggle | Master arm/disarm switch |
-| `siren.alarm` | Siren entity | Whatever device actually wakes you up |
+| `input_datetime.alarm_time` | Date/time (time only) | When the alarm should fire (or a `sensor` with `device_class: timestamp`) |
+| `input_boolean.alarm_active` | Toggle | Master arm/disarm switch (any entity supporting `homeassistant.toggle`) |
+| `siren.alarm` | Alert entity | The device to turn off when **Dismiss** is pressed |
 
 You can use any entity IDs you like — just point the card config at them.
 
@@ -54,7 +54,7 @@ Add the card to your dashboard via **Edit dashboard → Add card → Custom: Ala
 type: custom:alarm-countdown-card
 entity: input_datetime.alarm_time
 toggle_entity: input_boolean.alarm_active
-siren_entity: siren.alarm
+dismiss_entity: siren.alarm
 name: Bedroom Alarm
 icon: mdi:alarm
 show_seconds: true
@@ -64,16 +64,16 @@ show_seconds: true
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `entity` | string | `input_datetime.alarm_time` | The `input_datetime` holding the alarm time |
-| `toggle_entity` | string | `input_boolean.alarm_active` | The `input_boolean` that arms/disarms the alarm |
-| `siren_entity` | string | `siren.alarm` | The siren entity the **Dismiss** button will turn off |
+| `entity` | string | `input_datetime.alarm_time` | The `input_datetime` or timestamp `sensor` holding the alarm time |
+| `toggle_entity` | string | `input_boolean.alarm_active` | The entity that arms/disarms the alarm (uses `toggle`) |
+| `dismiss_entity` | string | `siren.alarm` | The entity the **Dismiss** button will turn off (uses `turn_off`) |
 | `name` | string | `Alarm` | Title shown in the card header |
 | `icon` | string | `mdi:alarm` | Material Design Icon for the header |
 | `show_seconds` | boolean | `true` | Show the seconds column in the countdown |
 
 ## How it pairs with an automation
 
-This card is the UI half. The brains live in a Home Assistant automation that watches `input_datetime.alarm_time` and turns on `siren.alarm` when the time matches and `input_boolean.alarm_active` is on. A consolidated `repeat/while` loop with `wait_for_trigger` listening for the dismiss boolean works really well — see the [HA automation docs](https://www.home-assistant.io/docs/automation/) for patterns.
+This card is the UI half. The brains live in a Home Assistant automation that watches `entity` and performs an action when the time matches and `toggle_entity` is on. A consolidated `repeat/while` loop with `wait_for_trigger` listening for the `dismiss_entity` state works really well — see the [HA automation docs](https://www.home-assistant.io/docs/automation/) for patterns.
 
 ## Theming
 
