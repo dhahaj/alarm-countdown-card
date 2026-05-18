@@ -18,21 +18,29 @@ class AlarmCountdownCard extends HTMLElement {
 
   setConfig(config) {
     this._config = {
-      entity: config.entity,
+      time_entity: config.time_entity || config.entity,
       toggle_entity: config.toggle_entity,
-      dismiss_entity: config.dismiss_entity || config.siren_entity,
+      dismiss_action: config.dismiss_action || config.dismiss_entity || config.siren_entity,
       name: config.name || "Alarm",
       show_seconds: config.show_seconds !== false,
       icon: config.icon || "mdi:alarm",
       ...config,
     };
+
+    // Normalize dismiss_action if it's just an entity ID string
+    if (typeof this._config.dismiss_action === "string") {
+      this._config.dismiss_action = {
+        action: "homeassistant.turn_off",
+        target: { entity_id: this._config.dismiss_action }
+      };
+    }
   }
 
   static getStubConfig() {
     return {
-      entity: "input_datetime.alarm_time",
+      time_entity: "input_datetime.alarm_time",
       toggle_entity: "input_boolean.alarm_active",
-      dismiss_entity: "siren.alarm",
+      dismiss_action: "siren.alarm",
     };
   }
 
@@ -178,8 +186,14 @@ class AlarmCountdownCard extends HTMLElement {
     this.$dismissBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       if (!self._hass) return;
-      self._hass.callService("homeassistant", "turn_off", {
-        entity_id: self._config.dismiss_entity,
+      
+      const actionParts = self._config.dismiss_action.action.split(".");
+      const domain = actionParts[0];
+      const service = actionParts[1];
+      
+      self._hass.callService(domain, service, {
+        ...self._config.dismiss_action.data,
+        ...self._config.dismiss_action.target,
       });
     });
   }
@@ -191,7 +205,7 @@ class AlarmCountdownCard extends HTMLElement {
   }
 
   _getTargetDate() {
-    var entity = this._hass.states[this._config.entity];
+    var entity = this._hass.states[this._config.time_entity];
     if (!entity) return null;
 
     var now = new Date();
@@ -236,12 +250,19 @@ class AlarmCountdownCard extends HTMLElement {
     if (!this._hass || !this._card) return;
 
     var pad = function(n) { return String(n).padStart(2, "0"); };
-    var entity = this._hass.states[this._config.entity];
+    var entity = this._hass.states[this._config.time_entity];
     var toggleEntity = this._hass.states[this._config.toggle_entity];
-    var dismissEntity = this._hass.states[this._config.dismiss_entity];
+    
+    // Check if dismiss action target is active
+    var dismissActive = false;
+    const action = this._config.dismiss_action;
+    if (action.target && action.target.entity_id) {
+      const targetEntity = this._hass.states[action.target.entity_id];
+      dismissActive = targetEntity && targetEntity.state === "on";
+    }
+
     var toggleExists = !!toggleEntity;
     var enabled = toggleExists ? toggleEntity.state === "on" : true;
-    var dismissActive = dismissEntity && dismissEntity.state === "on";
 
     // Toggle button state
     if (toggleExists) {
@@ -251,7 +272,7 @@ class AlarmCountdownCard extends HTMLElement {
     } else {
       this.$toggleBtn.className = "toggle-btn missing";
       this.$toggleIcon.setAttribute("icon", "mdi:alert-circle-outline");
-      this.$toggleLabel.textContent = this._config.toggle_entity;
+      this.$toggleLabel.textContent = this._config.toggle_entity || "Not set";
     }
 
     // Dismiss button visibility
@@ -260,7 +281,7 @@ class AlarmCountdownCard extends HTMLElement {
     // Missing datetime entity
     if (!entity) {
       this.$noEntity.hidden = false;
-      this.$noEntity.innerHTML = 'Entity <b>' + this._config.entity + '</b> not found';
+      this.$noEntity.innerHTML = 'Entity <b>' + (this._config.time_entity || "undefined") + '</b> not found';
       this.$countdownWrap.style.display = "none";
       this.$alarmTarget.style.display = "none";
       this.$disabledNotice.hidden = true;

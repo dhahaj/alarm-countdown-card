@@ -52,9 +52,12 @@ Add the card to your dashboard via **Edit dashboard → Add card → Custom: Ala
 
 ```yaml
 type: custom:alarm-countdown-card
-entity: input_datetime.alarm_time
+time_entity: input_datetime.alarm_time
 toggle_entity: input_boolean.alarm_active
-dismiss_entity: siren.alarm
+dismiss_action:
+  action: homeassistant.turn_off
+  target:
+    entity_id: siren.alarm
 name: Bedroom Alarm
 icon: mdi:alarm
 show_seconds: true
@@ -64,16 +67,34 @@ show_seconds: true
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `entity` | string | `input_datetime.alarm_time` | The `input_datetime` or timestamp `sensor` holding the alarm time |
-| `toggle_entity` | string | `input_boolean.alarm_active` | The entity that arms/disarms the alarm (uses `toggle`) |
-| `dismiss_entity` | string | `siren.alarm` | The entity the **Dismiss** button will turn off (uses `turn_off`) |
+| `time_entity` | string | - | The `input_datetime` or timestamp `sensor` holding the alarm time |
+| `toggle_entity` | string | - | The entity that arms/disarms the alarm (uses `toggle`) |
+| `dismiss_action` | string or map | - | The action to perform when **Dismiss** is pressed. Can be a simple entity ID string or a full HA action object. |
 | `name` | string | `Alarm` | Title shown in the card header |
 | `icon` | string | `mdi:alarm` | Material Design Icon for the header |
 | `show_seconds` | boolean | `true` | Show the seconds column in the countdown |
 
+### Simple Dismiss (Entity ID only)
+
+```yaml
+dismiss_action: siren.alarm
+```
+
+### Complex Dismiss (Action Payload)
+
+```yaml
+dismiss_action:
+  action: script.turn_on
+  target:
+    entity_id: script.silence_and_coffee
+  data:
+    variables:
+      mode: gentle
+```
+
 ## How it pairs with an automation
 
-This card is the UI half. The brains live in a Home Assistant automation that watches `entity` and performs an action when the time matches and `toggle_entity` is on. A consolidated `repeat/while` loop with `wait_for_trigger` listening for the `dismiss_entity` state works really well — see the [HA automation docs](https://www.home-assistant.io/docs/automation/) for patterns.
+This card is the UI half. The brains live in a Home Assistant automation that watches `time_entity` and performs an action when the time matches and `toggle_entity` is on. A consolidated `repeat/while` loop with `wait_for_trigger` listening for the `dismiss_action` target state works really well — see the [HA automation docs](https://www.home-assistant.io/docs/automation/) for patterns.
 
 ## Theming
 
