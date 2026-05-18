@@ -20,19 +20,38 @@ class AlarmCountdownCard extends HTMLElement {
     this._config = {
       time_entity: config.time_entity || config.entity,
       toggle_entity: config.toggle_entity,
-      dismiss_action: config.dismiss_action || config.dismiss_entity || config.siren_entity,
+      dismiss_entity: config.dismiss_entity || config.siren_entity,
+      dismiss_action: config.dismiss_action,
       name: config.name || "Alarm",
       show_seconds: config.show_seconds !== false,
       icon: config.icon || "mdi:alarm",
       ...config,
     };
 
-    // Normalize dismiss_action if it's just an entity ID string
+    // 1. Handle simple string in dismiss_action (legacy support or shorthand)
     if (typeof this._config.dismiss_action === "string") {
+      const entityId = this._config.dismiss_action;
       this._config.dismiss_action = {
         action: "homeassistant.turn_off",
-        target: { entity_id: this._config.dismiss_action }
+        target: { entity_id: entityId }
       };
+      // If we don't have an explicit watcher, use this entity
+      if (!this._config.dismiss_entity) {
+        this._config.dismiss_entity = entityId;
+      }
+    }
+
+    // 2. If no action at all, but we have a dismiss_entity, default to turning it off
+    if (!this._config.dismiss_action && this._config.dismiss_entity) {
+      this._config.dismiss_action = {
+        action: "homeassistant.turn_off",
+        target: { entity_id: this._config.dismiss_entity }
+      };
+    }
+
+    // 3. Fallback: if we still have an action but NO watcher, try to extract watcher from action
+    if (!this._config.dismiss_entity && this._config.dismiss_action && this._config.dismiss_action.target) {
+      this._config.dismiss_entity = this._config.dismiss_action.target.entity_id;
     }
   }
 
@@ -40,7 +59,7 @@ class AlarmCountdownCard extends HTMLElement {
     return {
       time_entity: "input_datetime.alarm_time",
       toggle_entity: "input_boolean.alarm_active",
-      dismiss_action: "siren.alarm",
+      dismiss_entity: "siren.alarm",
     };
   }
 
@@ -252,15 +271,9 @@ class AlarmCountdownCard extends HTMLElement {
     var pad = function(n) { return String(n).padStart(2, "0"); };
     var entity = this._hass.states[this._config.time_entity];
     var toggleEntity = this._hass.states[this._config.toggle_entity];
+    var monitorEntity = this._hass.states[this._config.dismiss_entity];
     
-    // Check if dismiss action target is active
-    var dismissActive = false;
-    const action = this._config.dismiss_action;
-    if (action.target && action.target.entity_id) {
-      const targetEntity = this._hass.states[action.target.entity_id];
-      dismissActive = targetEntity && targetEntity.state === "on";
-    }
-
+    var dismissActive = monitorEntity && monitorEntity.state === "on";
     var toggleExists = !!toggleEntity;
     var enabled = toggleExists ? toggleEntity.state === "on" : true;
 

@@ -69,27 +69,30 @@ show_seconds: true
 | --- | --- | --- | --- |
 | `time_entity` | string | - | The `input_datetime` or timestamp `sensor` holding the alarm time |
 | `toggle_entity` | string | - | The entity that arms/disarms the alarm (uses `toggle`) |
-| `dismiss_action` | string or map | - | The action to perform when **Dismiss** is pressed. Can be a simple entity ID string or a full HA action object. |
+| `dismiss_entity` | string | - | The entity whose state controls when the **Dismiss** button appears (e.g. `siren.alarm`). Shows button when "on". |
+| `dismiss_action` | string or map | - | The action to perform when **Dismiss** is pressed. Defaults to turning off `dismiss_entity`. |
 | `name` | string | `Alarm` | Title shown in the card header |
 | `icon` | string | `mdi:alarm` | Material Design Icon for the header |
 | `show_seconds` | boolean | `true` | Show the seconds column in the countdown |
 
 ### Simple Dismiss (Entity ID only)
 
+If you only provide an entity ID, the button appears when that entity is "on" and turns it off when clicked.
+
 ```yaml
 dismiss_action: siren.alarm
 ```
 
-### Complex Dismiss (Action Payload)
+### Advanced Dismiss (Script/Action Payload)
+
+Use `dismiss_entity` to tell the card what state to watch (e.g. your siren), and `dismiss_action` to define what happen when you click it (e.g. running a script).
 
 ```yaml
+dismiss_entity: siren.alarm
 dismiss_action:
   action: script.turn_on
   target:
     entity_id: script.silence_and_coffee
-  data:
-    variables:
-      mode: gentle
 ```
 
 ## How it pairs with an automation
